@@ -1,0 +1,107 @@
+$ python algoritmo_tc1.py 
+Dados carregados: 5 agentes, 50 tarefas.
+
+------ GVNS para f1 (Custo Total) ------
+
+>>> Execução 1 / 5 (f1)
+Solucao Inicial (f_id=1): Fitness = 227363.0000 (f=963.00, p=226400.00)
+Iter 0: Novo Melhor! Fitness = 901.0000 (f=901.00, p=0.00) (k=1)
+Iter 3: Novo Melhor! Fitness = 897.0000 (f=897.00, p=0.00) (k=1)
+Iter 3: Novo Melhor! Fitness = 894.0000 (f=894.00, p=0.00) (k=1)
+Iter 3: Novo Melhor! Fitness = 893.0000 (f=893.00, p=0.00) (k=1)
+Iter 20: Novo Melhor! Fitness = 891.0000 (f=891.00, p=0.00) (k=1)
+Iter 29: Novo Melhor! Fitness = 888.0000 (f=888.00, p=0.00) (k=1)
+Fim do GVNS f_id=1. Melhor Fitness: 888.0000 (fn objetivo=888.00, p(x)=0.00)
+Tempo de execucao (f1, run 1): 67.51 s
+  -> Custo (f1)=888.00, equilibrio (f2)=17.00, Penalidade (p(x))=0.00
+
+>>> Execução 2 / 5 (f1)
+Solucao Inicial (f_id=1): Fitness = 156936.0000 (f=936.00, p=156000.00)
+Iter 0: Novo Melhor! Fitness = 907.0000 (f=907.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 891.0000 (f=891.00, p=0.00) (k=1)
+Fim do GVNS f_id=1. Melhor Fitness: 891.0000 (fn objetivo=891.00, p(x)=0.00)
+Tempo de execucao (f1, run 2): 56.18 s
+  -> Custo (f1)=891.00, equilibrio (f2)=18.00, Penalidade (p(x))=0.00
+
+>>> Execução 3 / 5 (f1)
+Solucao Inicial (f_id=1): Fitness = 363733.0000 (f=933.00, p=362800.00)
+Iter 0: Novo Melhor! Fitness = 896.0000 (f=896.00, p=0.00) (k=1)
+Iter 11: Novo Melhor! Fitness = 893.0000 (f=893.00, p=0.00) (k=1)
+Iter 17: Novo Melhor! Fitness = 892.0000 (f=892.00, p=0.00) (k=1)
+Iter 22: Novo Melhor! Fitness = 889.0000 (f=889.00, p=0.00) (k=1)
+Iter 56: Novo Melhor! Fitness = 888.0000 (f=888.00, p=0.00) (k=1)
+Fim do GVNS f_id=1. Melhor Fitness: 888.0000 (fn objetivo=888.00, p(x)=0.00)
+Tempo de execucao (f1, run 3): 86.88 s
+  -> Custo (f1)=888.00, equilibrio (f2)=17.00, Penalidade (p(x))=0.00
+
+>>> Execução 4 / 5 (f1)
+Solucao Inicial (f_id=1): Fitness = 904.0000 (f=904.00, p=0.00)
+Iter 0: Novo Melhor! Fitness = 895.0000 (f=895.00, p=0.00) (k=1)
+Iter 3: Novo Melhor! Fitness = 891.0000 (f=891.00, p=0.00) (k=1)
+Fim do GVNS f_id=1. Melhor Fitness: 891.0000 (fn objetivo=891.00, p(x)=0.00)
+Tempo de execucao (f1, run 4): 56.51 s
+  -> Custo (f1)=891.00, equilibrio (f2)=23.00, Penalidade (p(x))=0.00
+
+>>> Execução 5 / 5 (f1)
+Solucao Inicial (f_id=1): Fitness = 414924.0000 (f=924.00, p=414000.00)
+Iter 0: Novo Melhor! Fitness = 893.0000 (f=893.00, p=0.00) (k=1)
+Iter 8: Novo Melhor! Fitness = 891.0000 (f=891.00, p=0.00) (k=1)
+Fim do GVNS f_id=1. Melhor Fitness: 891.0000 (fn objetivo=891.00, p(x)=0.00)
+Tempo de execucao (f1, run 5): 59.72 s
+  -> Custo (f1)=891.00, equilibrio (f2)=18.00, Penalidade (p(x))=0.00
+
+Resumo f1 (sobre 5 execuções):
+  min = 888.00
+  max = 891.00
+  std = 1.47
+
+------ GVNS para f2 (Equilíbrio) ------
+
+>>> Execução 1 / 5 (f2)
+Solucao Inicial (f_id=2): Fitness = 382818.0000 (f=18.00, p=382800.00)
+Iter 0: Novo Melhor! Fitness = 4.0000 (f=4.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 1.0000 (f=1.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 0.0000 (f=0.00, p=0.00) (k=1)
+Fim do GVNS f_id=2. Melhor Fitness: 0.0000 (fn objetivo=0.00, p(x)=0.00)
+Tempo de execucao (f2, run 1): 47.28 s
+  -> Custo (f1)=1291.00, equilibrio (f2)=0.00, Penalidade=0.00
+
+>>> Execução 2 / 5 (f2)
+Solucao Inicial (f_id=2): Fitness = 4822.0000 (f=22.00, p=4800.00)
+Iter 0: Novo Melhor! Fitness = 3.0000 (f=3.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 2.0000 (f=2.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 1.0000 (f=1.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 0.0000 (f=0.00, p=0.00) (k=1)
+Fim do GVNS f_id=2. Melhor Fitness: 0.0000 (fn objetivo=0.00, p(x)=0.00)
+Tempo de execucao (f2, run 2): 49.32 s
+  -> Custo (f1)=1405.00, equilibrio (f2)=0.00, Penalidade=0.00
+
+>>> Execução 3 / 5 (f2)
+Solucao Inicial (f_id=2): Fitness = 109632.0000 (f=32.00, p=109600.00)
+Iter 0: Novo Melhor! Fitness = 0.0000 (f=0.00, p=0.00) (k=1)
+Fim do GVNS f_id=2. Melhor Fitness: 0.0000 (fn objetivo=0.00, p(x)=0.00)
+Tempo de execucao (f2, run 3): 42.38 s
+  -> Custo (f1)=1212.00, equilibrio (f2)=0.00, Penalidade=0.00
+
+>>> Execução 4 / 5 (f2)
+Solucao Inicial (f_id=2): Fitness = 265636.0000 (f=36.00, p=265600.00)
+Iter 0: Novo Melhor! Fitness = 2.0000 (f=2.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 1.0000 (f=1.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 0.0000 (f=0.00, p=0.00) (k=1)
+Fim do GVNS f_id=2. Melhor Fitness: 0.0000 (fn objetivo=0.00, p(x)=0.00)
+Tempo de execucao (f2, run 4): 43.64 s
+  -> Custo (f1)=1346.00, equilibrio (f2)=0.00, Penalidade=0.00
+
+>>> Execução 5 / 5 (f2)
+Solucao Inicial (f_id=2): Fitness = 202425.0000 (f=25.00, p=202400.00)
+Iter 0: Novo Melhor! Fitness = 4.0000 (f=4.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 1.0000 (f=1.00, p=0.00) (k=1)
+Iter 3: Novo Melhor! Fitness = 0.0000 (f=0.00, p=0.00) (k=1)
+Fim do GVNS f_id=2. Melhor Fitness: 0.0000 (fn objetivo=0.00, p(x)=0.00)
+Tempo de execucao (f2, run 5): 45.68 s
+  -> Custo (f1)=1283.00, equilibrio (f2)=0.00, Penalidade=0.00
+
+Resumo f2 (sobre 5 execuções):
+  min = 0.00
+  max = 0.00
+  std = 0.00

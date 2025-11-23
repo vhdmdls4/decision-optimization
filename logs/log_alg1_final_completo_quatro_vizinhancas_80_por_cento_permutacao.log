@@ -1,0 +1,143 @@
+vhdua@DESKTOP-NA79I30 MINGW64 ~/Desktop/aulas/onl/tc1_decisao (main)
+$ python execucao_plot_tc1.py 
+--- INICIANDO EXECUCAO DA PARTE III DO TC1 ---
+Dados carregados: 5 agentes, 50 tarefas.
+
+--- Processando Objetivo f1 (5 execucoes) ---
+
+Execucao 1/5 para f1...
+Solucao Inicial (f_id=1): Fitness = 487277.0000 (f=877.00, p=486400.00)
+Iter 0: Novo Melhor! Fitness = 895.0000 (f=895.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 893.0000 (f=893.00, p=0.00) (k=2)
+Iter 18: Novo Melhor! Fitness = 891.0000 (f=891.00, p=0.00) (k=1)
+Iter 32: Novo Melhor! Fitness = 888.0000 (f=888.00, p=0.00) (k=3)
+Fim do GVNS f_id=1. Melhor Fitness: 888.0000 (fn objetivo=888.00, p(x)=0.00)
+Execucao 1 finalizada. Tempo: 67.38s, Fitness: 888.0000
+
+Execucao 2/5 para f1...
+Solucao Inicial (f_id=1): Fitness = 823267.0000 (f=867.00, p=822400.00)
+Iter 0: Novo Melhor! Fitness = 956.0000 (f=956.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 925.0000 (f=925.00, p=0.00) (k=3)
+Iter 0: Novo Melhor! Fitness = 903.0000 (f=903.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 901.0000 (f=901.00, p=0.00) (k=3)
+Iter 0: Novo Melhor! Fitness = 892.0000 (f=892.00, p=0.00) (k=1)
+Iter 1: Novo Melhor! Fitness = 891.0000 (f=891.00, p=0.00) (k=1)
+Iter 16: Novo Melhor! Fitness = 889.0000 (f=889.00, p=0.00) (k=2)
+Iter 94: Novo Melhor! Fitness = 888.0000 (f=888.00, p=0.00) (k=2)
+Fim do GVNS f_id=1. Melhor Fitness: 888.0000 (fn objetivo=888.00, p(x)=0.00)
+Execucao 2 finalizada. Tempo: 105.50s, Fitness: 888.0000
+
+Execucao 3/5 para f1...
+Solucao Inicial (f_id=1): Fitness = 529332.0000 (f=932.00, p=528400.00)
+Iter 0: Novo Melhor! Fitness = 917.0000 (f=917.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 913.0000 (f=913.00, p=0.00) (k=1)
+Iter 1: Novo Melhor! Fitness = 912.0000 (f=912.00, p=0.00) (k=4)
+Iter 1: Novo Melhor! Fitness = 911.0000 (f=911.00, p=0.00) (k=2)
+Iter 1: Novo Melhor! Fitness = 906.0000 (f=906.00, p=0.00) (k=1)
+Iter 1: Novo Melhor! Fitness = 898.0000 (f=898.00, p=0.00) (k=3)
+Iter 6: Novo Melhor! Fitness = 892.0000 (f=892.00, p=0.00) (k=2)
+Iter 6: Novo Melhor! Fitness = 891.0000 (f=891.00, p=0.00) (k=2)
+Iter 15: Novo Melhor! Fitness = 889.0000 (f=889.00, p=0.00) (k=5)
+Iter 26: Novo Melhor! Fitness = 888.0000 (f=888.00, p=0.00) (k=1)
+Fim do GVNS f_id=1. Melhor Fitness: 888.0000 (fn objetivo=888.00, p(x)=0.00)
+Execucao 3 finalizada. Tempo: 71.09s, Fitness: 888.0000
+
+Execucao 4/5 para f1...
+Solucao Inicial (f_id=1): Fitness = 903338.0000 (f=938.00, p=902400.00)
+Iter 0: Novo Melhor! Fitness = 913.0000 (f=913.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 905.0000 (f=905.00, p=0.00) (k=3)
+Iter 6: Novo Melhor! Fitness = 900.0000 (f=900.00, p=0.00) (k=4)
+Iter 8: Novo Melhor! Fitness = 895.0000 (f=895.00, p=0.00) (k=2)
+Iter 12: Novo Melhor! Fitness = 894.0000 (f=894.00, p=0.00) (k=4)
+Iter 35: Novo Melhor! Fitness = 893.0000 (f=893.00, p=0.00) (k=2)
+Iter 41: Novo Melhor! Fitness = 891.0000 (f=891.00, p=0.00) (k=3)
+Iter 56: Novo Melhor! Fitness = 889.0000 (f=889.00, p=0.00) (k=3)
+Iter 97: Novo Melhor! Fitness = 888.0000 (f=888.00, p=0.00) (k=2)
+Fim do GVNS f_id=1. Melhor Fitness: 888.0000 (fn objetivo=888.00, p(x)=0.00)
+Execucao 4 finalizada. Tempo: 111.07s, Fitness: 888.0000
+
+Execucao 5/5 para f1...
+Solucao Inicial (f_id=1): Fitness = 913326.0000 (f=926.00, p=912400.00)
+Iter 0: Novo Melhor! Fitness = 918.0000 (f=918.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 914.0000 (f=914.00, p=0.00) (k=3)
+Iter 0: Novo Melhor! Fitness = 911.0000 (f=911.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 908.0000 (f=908.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 903.0000 (f=903.00, p=0.00) (k=2)
+Iter 0: Novo Melhor! Fitness = 902.0000 (f=902.00, p=0.00) (k=5)
+Iter 1: Novo Melhor! Fitness = 894.0000 (f=894.00, p=0.00) (k=1)
+Fim do GVNS f_id=1. Melhor Fitness: 894.0000 (fn objetivo=894.00, p(x)=0.00)
+Execucao 5 finalizada. Tempo: 50.50s, Fitness: 894.0000
+
+--- Processando Objetivo f2 (5 execucoes) ---
+
+Execucao 1/5 para f2...
+Solucao Inicial (f_id=2): Fitness = 36.0000 (f=36.00, p=0.00)
+Iter 0: Novo Melhor! Fitness = 1.0000 (f=1.00, p=0.00) (k=1)
+Iter 1: Novo Melhor! Fitness = 0.0000 (f=0.00, p=0.00) (k=1)
+Fim do GVNS f_id=2. Melhor Fitness: 0.0000 (fn objetivo=0.00, p(x)=0.00)
+Execucao 1 finalizada. Tempo: 26.41s, Fitness: 0.0000
+
+Execucao 2/5 para f2...
+Solucao Inicial (f_id=2): Fitness = 26.0000 (f=26.00, p=0.00)
+Iter 0: Novo Melhor! Fitness = 0.0000 (f=0.00, p=0.00) (k=1)
+Fim do GVNS f_id=2. Melhor Fitness: 0.0000 (fn objetivo=0.00, p(x)=0.00)
+Execucao 2 finalizada. Tempo: 24.50s, Fitness: 0.0000
+
+Execucao 3/5 para f2...
+Solucao Inicial (f_id=2): Fitness = 31.0000 (f=31.00, p=0.00)
+Iter 0: Novo Melhor! Fitness = 1.0000 (f=1.00, p=0.00) (k=1)
+Iter 2: Novo Melhor! Fitness = 0.0000 (f=0.00, p=0.00) (k=2)
+Fim do GVNS f_id=2. Melhor Fitness: 0.0000 (fn objetivo=0.00, p(x)=0.00)
+Execucao 3 finalizada. Tempo: 27.47s, Fitness: 0.0000
+
+Execucao 4/5 para f2...
+Solucao Inicial (f_id=2): Fitness = 56039.0000 (f=39.00, p=56000.00)
+Iter 0: Novo Melhor! Fitness = 0.0000 (f=0.00, p=0.00) (k=1)
+Fim do GVNS f_id=2. Melhor Fitness: 0.0000 (fn objetivo=0.00, p(x)=0.00)
+Execucao 4 finalizada. Tempo: 24.87s, Fitness: 0.0000
+
+Execucao 5/5 para f2...
+Solucao Inicial (f_id=2): Fitness = 18.0000 (f=18.00, p=0.00)
+Iter 0: Novo Melhor! Fitness = 2.0000 (f=2.00, p=0.00) (k=1)
+Iter 0: Novo Melhor! Fitness = 0.0000 (f=0.00, p=0.00) (k=1)
+Fim do GVNS f_id=2. Melhor Fitness: 0.0000 (fn objetivo=0.00, p(x)=0.00)
+Execucao 5 finalizada. Tempo: 26.61s, Fitness: 0.0000
+
+
+--- (iii.b) RESULTADOS ESTATICOS ---
+
+Estatisticas para f1 (Fitness = f1 + P):
+  Resultados (Fitness): [np.float64(888.0), np.float64(888.0), np.float64(888.0), np.float64(888.0), np.float64(894.0)]
+  Resultados (f_obj):   [np.float64(888.0), np.float64(888.0), np.float64(888.0), np.float64(888.0), np.float64(894.0)]
+  Resultados (Penal.):  [np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0)]
+  Minimo (Fitness): 888.0000
+  Maximo (Fitness): 894.0000
+  Desvio Padrao (Fitness): 2.4000
+
+Estatisticas para f2 (Fitness = f2 + P):
+  Resultados (Fitness): [np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0)]
+  Resultados (f_obj):   [np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0)]
+  Resultados (Penal.):  [np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0)]
+  Minimo (Fitness): 0.0000
+  Maximo (Fitness): 0.0000
+  Desvio Padrao (Fitness): 0.0000
+
+
+--- (iii.c) GERANDO GRAFICOS DE CONVERGENCIA ---
+Plotando curvas de convergencia (ZOOM 10 iter) para f1...
+Grafico de convergencia (zoom) salvo em: figuras\convergencia_f1_zoom.png
+Plotando curvas de convergencia (ZOOM 10 iter) para f2...
+Grafico de convergencia (zoom) salvo em: figuras\convergencia_f2_zoom.png
+
+
+--- (iii.d) GERANDO GRAFICOS DA MELHOR SOLUCAO ---
+Plotando caracteristicas da melhor solucao para f1...
+Grafico de carga salvo em: figuras\solucao_f1_carga.png
+Grafico de custo salvo em: figuras\solucao_f1_custo.png
+Plotando caracteristicas da melhor solucao para f2...
+Grafico de carga salvo em: figuras\solucao_f2_carga.png
+Grafico de custo salvo em: figuras\solucao_f2_custo.png
+
+
+--- EXECUCAO DA PARTE III CONCLUIDA ---
+Todos os dados estatisticos foram impressos e os 6 graficos foram salvos.
