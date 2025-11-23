@@ -21,54 +21,6 @@ class ProbData:
         self.capacidade = params['b']     # b[i] = capacidade do agente i
         self.b = params['b']              # alias
 
-def greedy_initial_solution(params: dict, f_id: int) -> np.ndarray:
-
-    n = params['n']
-    m = params['m']
-    a = params['a']
-    b = params['b']
-    c = params['c']
-    
-    solucao = np.zeros(n, dtype=int)
-    carga_agentes = np.zeros(m) 
-    
-    if f_id == 1:
-        for j in range(n):
-            melhor_agente = -1
-            menor_custo = float('inf')
-
-            agentes_ordenados_custo = np.argsort(c[:, j])
-            
-            for agente_i in agentes_ordenados_custo:
-                if carga_agentes[agente_i] + a[agente_i, j] <= b[agente_i]:
-                    melhor_agente = agente_i
-                    break
-            
-            if melhor_agente == -1:
-                melhor_agente = np.argmin(carga_agentes)
-
-            solucao[j] = melhor_agente
-            carga_agentes[melhor_agente] += a[melhor_agente, j]
-            
-    else:
-        for j in range(n):
-            melhor_agente = -1
-            
-            agentes_ordenados_carga = np.argsort(carga_agentes)
-            
-            for agente_i in agentes_ordenados_carga:
-                if carga_agentes[agente_i] + a[agente_i, j] <= b[agente_i]:
-                    melhor_agente = agente_i
-                    break
-            
-            if melhor_agente == -1:
-                melhor_agente = agentes_ordenados_carga[0]
-
-            solucao[j] = melhor_agente
-            carga_agentes[melhor_agente] += a[melhor_agente, j]
-
-    return solucao
-
 def neighborhood_change(X_atual, F_atual, X_refinado, F_refinado, k_atual):
     """
     Função NeighborhoodChange (Mudança de Vizinhança) para o GVNS.
@@ -102,6 +54,50 @@ def neighborhood_change(X_atual, F_atual, X_refinado, F_refinado, k_atual):
 # =============================================================================
 # Estruturas de Vizinhança (Geradores)
 # =============================================================================
+
+def gerar_vizinhos_shift_completo(solucao: np.ndarray, probdata: ProbData) -> Iterator[np.ndarray]:
+    """
+    Adaptação do 'explore_neighborhood_shift' do Algoritmo 2 para o Algoritmo 1.
+    
+    Diferença do Smart Shift:
+    - NÃO verifica se o destino está menos carregado que a origem.
+    - Tenta mover cada tarefa para TODOS os outros agentes.
+    - É mais lento (O(n*m)), mas garante exploração completa para redução de custo (f1).
+    """
+    n_tarefas = probdata.n
+    m_agentes = probdata.m
+    
+    # Itera sobre todas as tarefas (como no Alg 2)
+    for j in range(n_tarefas):
+        agente_atual = solucao[j]
+        
+        # Tenta mover para todos os outros agentes
+        for novo_agente in range(m_agentes):
+            if novo_agente == agente_atual:
+                continue
+            
+            # Gera o vizinho incondicionalmente (a validação de melhora é feita pelo VND)
+            yield aplicar_shift(solucao, j, novo_agente)
+
+def gerar_vizinhos_swap_completo(solucao: np.ndarray, probdata: ProbData) -> Iterator[np.ndarray]:
+    """
+    Adaptação do 'explore_neighborhood_switch' do Algoritmo 2.
+    
+    Diferença:
+    - É determinístico (j1 de 0 a n, j2 de j1+1 a n).
+    - Garante que todos os pares possíveis sejam testados na ordem.
+    """
+    n_tarefas = probdata.n
+    
+    for j1 in range(n_tarefas):
+        # O Alg 2 faz swap de j1 com j2 onde j2 > j1
+        for j2 in range(j1 + 1, n_tarefas):
+            
+            # Otimização simples: se já são o mesmo agente, trocar não muda nada
+            if solucao[j1] == solucao[j2]:
+                continue
+                
+            yield aplicar_swap(solucao, j1, j2)
 
 def aplicar_shift(solucao: np.ndarray, tarefa: int, novo_agente: int) -> np.ndarray:
     """Aplica o movimento Shift: move 'tarefa' para 'novo_agente'."""
@@ -173,7 +169,7 @@ def gerar_vizinhos_swap(solucao: np.ndarray, **kwargs) -> Iterator[np.ndarray]:
     n_tarefas = len(solucao)
     # Podemos adicionar aleatoriedade na ordem de visitação para não ser sempre determinístico
     indices = list(range(n_tarefas))
-    random.shuffle(indices) # Descomentar se quiser swap estocástico
+    random.shuffle(indices) # estocástico
     
     for i in range(len(indices)):
         j1 = indices[i]
@@ -308,12 +304,17 @@ def shake(x: np.ndarray, k: int, probdata: object) -> np.ndarray:
 
 def vnd_hibrido(solucao_inicial: np.ndarray, 
                 probdata: object, 
-                func_obj: Callable) -> np.ndarray:
+                func_obj: Callable,
+                f_id: int) -> np.ndarray:
     """
     VND Híbrido:
       - N1: Smart Shift (FI)
       - N2: Swap (FI)
       - Refinamento final: BI em N1
+    
+    Adaptativo:
+      - Se f_id=1 (Custo): Usa Shift Irrestrito (lento mas acha preço bom)
+      - Se f_id=2 (Equilíbrio): Usa Smart Shift (rápido e foca em balanceamento)
     """
     x = solucao_inicial.copy()
     k_max = 2 
@@ -325,14 +326,28 @@ def vnd_hibrido(solucao_inicial: np.ndarray,
         
         if k == 1:
             # N1: Smart Shift (Prioriza agentes cheios)
-            novo_x, _, melhorou = first_improvement(
-                x, gerar_vizinhos_smart_shift, func_obj, probdata=probdata
-            )
+            if f_id == 1:
+                # ESTRATÉGIA PARA CUSTO (F1)
+                # Usa a lógica do Algoritmo 2 (Shift Irrestrito)
+                # Isso permite mover tarefa de um agente vazio para um cheio se for mais barato.
+                novo_x, _, melhorou = first_improvement(
+                    x, gerar_vizinhos_shift_completo, func_obj, probdata=probdata
+                )
+            else:
+                # ESTRATÉGIA PARA EQUILÍBRIO (F2)
+                # Usa a lógica Smart: Só move de Cheio -> Vazio.
+                # Muito mais rápido e direto para este objetivo.
+                novo_x, _, melhorou = first_improvement(
+                    x, gerar_vizinhos_smart_shift, func_obj, probdata=probdata
+                )
         elif k == 2:
             # N2: Swap
             novo_x, _, melhorou = first_improvement(
                 x, gerar_vizinhos_swap, func_obj, probdata=probdata
             )
+            # novo_x, _, melhorou = first_improvement(
+            #     x, gerar_vizinhos_swap_completo, func_obj, probdata=probdata
+            # )
             
         if melhorou:
             x = novo_x
@@ -487,6 +502,7 @@ def gvns(f_id: int, params: dict, k_max: int, max_iter_sem_melhora: int):
     # Função fitness penalizada F(x) para este f_id
     func_fitness = lambda sol: get_fitness(sol, f_id, params)
     
+    # peso_custo = 0.8 if f_id == 1 else 0.2
     # Solução inicial
     best_sol = heuristica_construtiva_com_aleatoriedade(probdata, peso_custo=0.5)
     # best_sol = greedy_initial_solution(params, f_id=f_id)
@@ -510,7 +526,7 @@ def gvns(f_id: int, params: dict, k_max: int, max_iter_sem_melhora: int):
             sol_prime = shake(best_sol, k, probdata)
             
             # 2. VND (busca local)
-            sol_second = vnd_hibrido(sol_prime, probdata, func_fitness)
+            sol_second = vnd_hibrido(sol_prime, probdata, func_fitness, f_id)
             
             # 3. Avaliação da solução refinada
             f_obj_second, p_second = calculate_objective_and_penalty(sol_second, f_id, params)
@@ -521,11 +537,12 @@ def gvns(f_id: int, params: dict, k_max: int, max_iter_sem_melhora: int):
                 best_fitness = fitness_second
                 f_obj = f_obj_second
                 penalidade = p_second
-                
+
+                print(f"Iter {iter_atual}: Novo Melhor! Fitness = {best_fitness:.4f} (f={f_obj:.2f}, p={penalidade:.2f}) (k={k})")
+
                 k = 1
                 iter_sem_melhora = 0
                 
-                print(f"Iter {iter_atual}: Novo Melhor! Fitness = {best_fitness:.4f} (f={f_obj:.2f}, p={penalidade:.2f}) (k={k})")
                 historico_convergencia.append((iter_atual, best_fitness, f_obj, penalidade))
             else:
                 k += 1
