@@ -7,39 +7,16 @@ import time
 PENALTY_COEFFICIENT = 10000.0
 
 def heuristica_construtiva_com_aleatoriedade(params, peso_custo=0.5):
-    """
-    Constrói uma solução inicial ponderando Custo (fC) e Equilíbrio de Carga (fE).
-
-    probdata: instância de ProbData
-    peso_custo: 1.0 -> foca em custo, 0.0 -> foca em equilíbrio de carga
+    n = params['n']
+    m = params['m']
     
-    Args:
-        probdata: Dados do problema.
-        peso_custo (float): Entre 0.0 e 1.0.
-            - 1.0: Foca 100% em minimizar Custo ($f_C$).
-            - 0.0: Foca 100% em minimizar Desequilíbrio ($f_E$).
-            - 0.5: Meio termo equilibrado.
-    """
-    n = params['n'] # número de tarefas
-    m = params['m'] # número de agentes
-    a = params['a'] # a[i,j] = recurso do agente i p/ tarefa j
-    b = params['b'] # b[i] = capacidade do agente i
-    c = params['c'] # c[i,j] = custo de atribuir j a i
-    
-
-    # Atribuição final: vetor [0..m-1] de tamanho n (um agente por tarefa)
     solucao = np.empty(n, dtype=int)
     
-    # Rastreia a carga atual de cada agente para cálculo rápido
     carga_atual = np.zeros(m)
     capacidade_max = params['b']
     
-    # Normalização: Para somar custo (ex: 20) com carga (ex: 0.5),
-    # precisamos colocar tudo na mesma escala (0 a 1 aproximadamente).
     max_custo_global = np.max(params['c']) if np.max(params['c']) > 0 else 1.0
-    
-    # 1. Aleatoriedade: Embaralha a ordem de inserção das tarefas
-    # Isso é vital para o GVNS não ficar preso sempre no mesmo ponto de partida
+
     tarefas = list(range(n))
     random.shuffle(tarefas)
     
@@ -49,41 +26,26 @@ def heuristica_construtiva_com_aleatoriedade(params, peso_custo=0.5):
         for agente in range(m):
             custo_bruto = params['c'][agente][tarefa]
             recurso_necessario = params['a'][agente][tarefa]
-            
-            # --- Cálculo dos Componentes do Score ---
-            
-            # Componente A: Custo Normalizado (0 a 1)
-            # Quanto menor, melhor para f_C
+
             score_custo = custo_bruto / max_custo_global
             
-            # Componente B: Impacto na Carga (0 a 1+)
-            # Calcula quão cheio o agente ficará se receber essa tarefa.
-            # Quanto menor (menos cheio), melhor para f_E e para viabilidade.
             nova_carga = carga_atual[agente] + recurso_necessario
             score_carga = nova_carga / capacidade_max[agente]
-            
-            # Penalidade Suave (Soft Constraint)
-            # Se estourar a capacidade, aumenta drasticamente o score para evitar esse agente
+
             penalidade = 0
             if nova_carga > capacidade_max[agente]:
-                penalidade = 1000.0  # Valor alto para desencorajar violações
-            
-            # --- Score Final ---
-            # Combina os objetivos baseados no peso
+                penalidade = 1000.0
+
             score_final = (peso_custo * score_custo) + \
                           ((1 - peso_custo) * score_carga) + \
                           penalidade
-            
-            # Adiciona um "ruído" aleatório muito pequeno (0.1%) para desempatar
-            # agentes idênticos de forma variada
+
             score_final += random.uniform(0, 0.001)
             
             scores.append(score_final)
         
-        # Escolhe o agente com o MENOR score (menor custo/impacto combinado)
         melhor_agente = np.argmin(scores)
         
-        # Atribui
         solucao[tarefa] = melhor_agente
         carga_atual[melhor_agente] += params['a'][melhor_agente][tarefa]
         
@@ -103,7 +65,6 @@ def greedy_initial_solution(params: dict, f_id: int) -> np.ndarray:
     if f_id == 1:
         for j in range(n):
             melhor_agente = -1
-            menor_custo = float('inf')
 
             agentes_ordenados_custo = np.argsort(c[:, j])
             
@@ -333,9 +294,7 @@ if __name__ == "__main__":
     MAX_ITER_SEM_MELHORA = 100
     N_RUNS = 5
     
-    # -----------------------------
     # f1: Custo Total
-    # -----------------------------
     resultados_f1 = []
     
     print("\n------ GVNS para f1 (Custo Total) ------")
@@ -359,16 +318,13 @@ if __name__ == "__main__":
         
         resultados_f1.append(f1_final)
     
-    # Estatísticas f1: min, std, max
     resultados_f1 = np.array(resultados_f1)
     print("\nResumo f1 (sobre 5 execuções):")
     print(f"  min = {resultados_f1.min():.2f}")
     print(f"  max = {resultados_f1.max():.2f}")
     print(f"  std = {resultados_f1.std():.2f}")
     
-    # -----------------------------
     # f2: Equilíbrio de Carga
-    # -----------------------------
     resultados_f2 = []
     
     print("\n------ GVNS para f2 (Equilíbrio) ------")
