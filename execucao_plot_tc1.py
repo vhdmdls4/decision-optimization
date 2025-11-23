@@ -30,8 +30,12 @@ def plot_convergence(results_list: list, f_id: int):
         ax1.plot(iters, fitness_F, 'o-', label=f'Execucao {i+1}') 
         ax2.plot(iters, fitness_f, 'o-', label=f'Execucao {i+1}') 
 
-    ax1.set_xlim(-0.5, 10) 
-    ax2.set_xlim(-0.5, 10)
+    ax1.set_xlim(-0.5, 100)
+    ax2.set_xlim(-0.5, 100)
+
+    xticks = [0, 5] + list(range(0, 101, 10))
+    ax1.set_xticks(xticks)
+    ax2.set_xticks(xticks)
 
     ax1.legend()
     ax1.grid(True, linestyle='--', alpha=0.6)
