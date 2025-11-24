@@ -2,7 +2,6 @@
 
 import numpy as np
 import random
-import time
 from typing import Iterator, Callable, Tuple
 import matplotlib.pyplot as plt
 
@@ -21,35 +20,140 @@ class ProbData:
         self.capacidade = params['b']     # b[i] = capacidade do agente i
         self.b = params['b']              # alias
 
-def neighborhood_change(X_atual, F_atual, X_refinado, F_refinado, k_atual):
+def estimar_intervalos_normalizacao(params: dict, k_max: int, max_iter_sem_melhora: int):
     """
-    Função NeighborhoodChange (Mudança de Vizinhança) para o GVNS.
-    Compara a solução refinada (X_refinado) com a solução atual (X_atual) 
-    e ajusta o índice de vizinhança k.
+    Estima intervalos [min, max] para f1 e f2 usando as soluções
+    (aproximadas) que minimizam f1 e f2 separadamente via GVNS.
+
+    Esses pontos funcionam como aproximações dos pontos ideal/nadir
+    no espaço de objetivos, para efeito de normalização na soma ponderada.
     """
+    print("\n[Normalização] Estimando extremos de f1 e f2 com GVNS mono-objetivo...")
     
-    # 1. Comparação dos valores de fitness (F_refinado < F_atual)
-    # Utilizamos o valor F(X) = f(X) + P(X) para guiar a busca [2]
+    # Melhor para f1 (custo)
+    sol_f1, _ = gvns(
+        f_id=1,
+        params=params,
+        k_max=k_max,
+        max_iter_sem_melhora=max_iter_sem_melhora
+    )
+    f1_f1, _ = calculate_objective_and_penalty(sol_f1, 1, params)
+    f2_f1, _ = calculate_objective_and_penalty(sol_f1, 2, params)
     
-    if F_refinado < F_atual:
-        # Linha 1: Se f(x') < f(x), o movimento é aceito [1]
-        
-        # 2. Faz o movimento (Atualiza o incumbente para o refinado)
-        X_nova = X_refinado.copy()  # Faz uma cópia da solução (make a move) [1]
-        F_novo = F_refinado
-        
-        # 3. Reinicia a vizinhança
-        k_novo = 1  # Retorna à vizinhança inicial N1 [1]
-        
-    else:
-        # 4. Não houve melhoria
-        X_nova = X_atual.copy()
-        F_novo = F_atual
-        
-        # 5. Próxima vizinhança
-        k_novo = k_atual + 1  # Incrementa o índice para k+1 (Next neighborhood) [1]
-        
-    return X_nova, F_novo, k_novo
+    # Melhor para f2 (equilíbrio)
+    sol_f2, _ = gvns(
+        f_id=2,
+        params=params,
+        k_max=k_max,
+        max_iter_sem_melhora=max_iter_sem_melhora
+    )
+    f1_f2, _ = calculate_objective_and_penalty(sol_f2, 1, params)
+    f2_f2, _ = calculate_objective_and_penalty(sol_f2, 2, params)
+    
+    # Intervalos aproximados (ideal/nadir aproximados)
+    f1_min = min(f1_f1, f1_f2)
+    f1_max = max(f1_f1, f1_f2)
+    f2_min = min(f2_f1, f2_f2)
+    f2_max = max(f2_f1, f2_f2)
+    
+    print(f"[Normalização] f1 ∈ [{f1_min:.2f}, {f1_max:.2f}]")
+    print(f"[Normalização] f2 ∈ [{f2_min:.2f}, {f2_max:.2f}]")
+    
+    norm_data = {
+        'f1_min': f1_min,
+        'f1_max': f1_max,
+        'f2_min': f2_min,
+        'f2_max': f2_max,
+        'x_f1': sol_f1,
+        'x_f2': sol_f2
+    }
+    return norm_data
+
+def get_fitness_pw(solucao: np.ndarray,
+                   params: dict,
+                   w1: float,
+                   w2: float,
+                   norm_data: dict) -> float:
+    """
+    Fitness para o método da soma ponderada (Pw).
+
+    F_pw(x) = w1 * f1_norm(x) + w2 * f2_norm(x) + P_cap(x)
+
+    onde f1_norm e f2_norm são normalizadas usando os intervalos
+    estimados em 'norm_data'.
+    """
+    f1, f2, pen_cap = calcular_valores_biojetivos(solucao, params)
+    
+    # Evita divisão por zero
+    denom_f1 = (norm_data['f1_max'] - norm_data['f1_min'])
+    denom_f2 = (norm_data['f2_max'] - norm_data['f2_min'])
+    if denom_f1 <= 0.0:
+        denom_f1 = 1.0
+    if denom_f2 <= 0.0:
+        denom_f2 = 1.0
+    
+    f1_norm = (f1 - norm_data['f1_min']) / denom_f1
+    f2_norm = (f2 - norm_data['f2_min']) / denom_f2
+    
+    F_pw = w1 * f1_norm + w2 * f2_norm + pen_cap
+    return F_pw
+
+
+def calcular_valores_biojetivos(solucao: np.ndarray, params: dict):
+    """
+    Calcula simultaneamente:
+      - f1(x): custo total
+      - f2(x): desequilíbrio de carga
+      - P_cap(x): penalidade por violar capacidade
+
+    Útil para as formulações escalares (Pw e Pε).
+    """
+    n = params['n']
+    m = params['m']
+    a = params['a']
+    b = params['b']
+    c = params['c']
+    
+    carga_agentes = np.zeros(m)
+    custo_total = 0.0
+    
+    for j in range(n):
+        agente_i = int(solucao[j])
+        carga_agentes[agente_i] += a[agente_i, j]
+        custo_total += c[agente_i, j]
+    
+    # f1: custo total
+    f1 = custo_total
+    
+    # f2: diferença entre agente mais e menos carregado
+    f2 = np.max(carga_agentes) - np.min(carga_agentes)
+    
+    # Violação de capacidade: max(0, carga - capacidade)
+    violacao = np.maximum(0, carga_agentes - b)
+    penalidade_total = PENALIDADE_COEFICIENTE * np.sum(violacao)
+    
+    return f1, f2, penalidade_total
+
+def get_fitness_epsilon(solucao: np.ndarray,
+                        params: dict,
+                        epsilon_f2: float) -> float:
+    """
+    Fitness para o método ϵ-restrito (Pε):
+
+    min f1(x)
+    s.a. f2(x) <= epsilon_f2
+
+    Implementado via penalização:
+      F_e(x) = f1(x) + P_cap(x) + P_ε(x),
+    onde P_ε(x) = PENALIDADE_COEFICIENTE * max(0, f2(x) - epsilon_f2).
+    """
+    f1, f2, pen_cap = calcular_valores_biojetivos(solucao, params)
+    
+    viol_epsilon = max(0.0, f2 - epsilon_f2)
+    pen_eps = PENALIDADE_COEFICIENTE * viol_epsilon
+    
+    F_e = f1 + pen_cap + pen_eps
+    return F_e
 
 # =============================================================================
 # Estruturas de Vizinhança (Geradores)
@@ -78,26 +182,6 @@ def gerar_vizinhos_shift_completo(solucao: np.ndarray, probdata: ProbData) -> It
             
             # Gera o vizinho incondicionalmente (a validação de melhora é feita pelo VND)
             yield aplicar_shift(solucao, j, novo_agente)
-
-def gerar_vizinhos_swap_completo(solucao: np.ndarray, probdata: ProbData) -> Iterator[np.ndarray]:
-    """
-    Adaptação do 'explore_neighborhood_switch' do Algoritmo 2.
-    
-    Diferença:
-    - É determinístico (j1 de 0 a n, j2 de j1+1 a n).
-    - Garante que todos os pares possíveis sejam testados na ordem.
-    """
-    n_tarefas = probdata.n
-    
-    for j1 in range(n_tarefas):
-        # O Alg 2 faz swap de j1 com j2 onde j2 > j1
-        for j2 in range(j1 + 1, n_tarefas):
-            
-            # Otimização simples: se já são o mesmo agente, trocar não muda nada
-            if solucao[j1] == solucao[j2]:
-                continue
-                
-            yield aplicar_swap(solucao, j1, j2)
 
 def aplicar_shift(solucao: np.ndarray, tarefa: int, novo_agente: int) -> np.ndarray:
     """Aplica o movimento Shift: move 'tarefa' para 'novo_agente'."""
@@ -345,9 +429,6 @@ def vnd_hibrido(solucao_inicial: np.ndarray,
             novo_x, _, melhorou = first_improvement(
                 x, gerar_vizinhos_swap, func_obj, probdata=probdata
             )
-            # novo_x, _, melhorou = first_improvement(
-            #     x, gerar_vizinhos_swap_completo, func_obj, probdata=probdata
-            # )
             
         if melhorou:
             x = novo_x
@@ -555,6 +636,371 @@ def gvns(f_id: int, params: dict, k_max: int, max_iter_sem_melhora: int):
     print(f"Fim do GVNS f_id={f_id}. Melhor Fitness: {best_fitness:.4f} (fn objetivo={f_obj:.2f}, p(x)={penalidade:.2f})")
     return best_sol, historico_convergencia
 
+def rodar_abordagem_soma_ponderada(params: dict,
+                    k_max: int,
+                    max_iter_sem_melhora: int,
+                    w1: float,
+                    w2: float,
+                    norm_data: dict):
+    """
+    Executa uma vez o GVNS usando a formulação Pw (soma ponderada),
+    para um par de pesos (w1, w2), w1 + w2 = 1.
+
+    Retorna:
+      - melhor_sol: solução em termos de X
+      - f1, f2, pen_cap: valores biobjetivo da solução
+      - historico: histórico de convergência (F_pw, f1, f2, P_cap)
+    """
+    probdata = ProbData(params)
+    
+    # Peso da heurística construtiva alinhado com ênfase da soma ponderada:
+    peso_custo_heur = w1  # w1 ~ importância relativa de f1 (custo)
+    sol_inicial = heuristica_construtiva_com_aleatoriedade(probdata,
+                                                           peso_custo=peso_custo_heur)
+    
+    func_fitness = lambda sol: get_fitness_pw(sol, params, w1, w2, norm_data)
+    
+    # Se w1 >= w2, focamos a vizinhança no custo; senão, no equilíbrio
+    f_id_vnd = 1 if w1 >= w2 else 2
+    
+    label = f"Pw(w1={w1:.2f},w2={w2:.2f})"
+    
+    melhor_sol, historico = gvns_abordagem_escalar(
+        params=params,
+        k_max=k_max,
+        max_iter_sem_melhora=max_iter_sem_melhora,
+        func_fitness=func_fitness,
+        probdata=probdata,
+        solucao_inicial=sol_inicial,
+        f_id_vnd=f_id_vnd,
+        label=label
+    )
+    
+    f1, f2, pen_cap = calcular_valores_biojetivos(melhor_sol, params)
+    return melhor_sol, f1, f2, pen_cap, historico
+
+def rodar_abordagem_epsilon(params: dict,
+                         k_max: int,
+                         max_iter_sem_melhora: int,
+                         epsilon_f2: float):
+    """
+    Executa uma vez o GVNS usando a formulação Pε (ϵ-restrito):
+
+      min f1(x)
+      s.a. f2(x) <= epsilon_f2
+
+    via penalização.
+
+    Retorna:
+      - melhor_sol: solução em termos de X
+      - f1, f2, pen_cap: valores biobjetivo da solução
+      - historico: histórico de convergência
+    """
+    probdata = ProbData(params)
+    
+    # Para Pε, f1 é objetivo principal -> heurística puxa mais para custo
+    sol_inicial = heuristica_construtiva_com_aleatoriedade(probdata,
+                                                           peso_custo=0.8)
+    
+    func_fitness = lambda sol: get_fitness_epsilon(sol, params, epsilon_f2)
+    
+    # Aqui o VND é orientado para custo (f1) como objetivo principal
+    f_id_vnd = 1
+    label = f"Pe(eps={epsilon_f2:.2f})"
+    
+    melhor_sol, historico = gvns_abordagem_escalar(
+        params=params,
+        k_max=k_max,
+        max_iter_sem_melhora=max_iter_sem_melhora,
+        func_fitness=func_fitness,
+        probdata=probdata,
+        solucao_inicial=sol_inicial,
+        f_id_vnd=f_id_vnd,
+        label=label
+    )
+    
+    f1, f2, pen_cap = calcular_valores_biojetivos(melhor_sol, params)
+    return melhor_sol, f1, f2, pen_cap, historico
+
+def filtrar_nao_dominadas(pontos: list):
+    """
+    Recebe uma lista de dicionários com pelo menos:
+      - 'f1': valor de f1(x)
+      - 'f2': valor de f2(x)
+
+    Retorna apenas as soluções não-dominadas (minimização em f1 e f2).
+    """
+    nao_dom = []
+    for i, p in enumerate(pontos):
+        dominado = False
+        for j, q in enumerate(pontos):
+            if j == i:
+                continue
+            # q domina p se:
+            # q.f1 <= p.f1 e q.f2 <= p.f2 e pelo menos uma estrita
+            if (q['f1'] <= p['f1'] and q['f2'] <= p['f2'] and
+                (q['f1'] < p['f1'] or q['f2'] < p['f2'])):
+                dominado = True
+                break
+        if not dominado:
+            nao_dom.append(p)
+    return nao_dom
+
+
+def selecionar_bem_distribuidas(pontos: list, max_pontos: int = 20):
+    """
+    Recebe uma lista de pontos (dicionários com 'f1' e 'f2') já não-dominados.
+    Se o número de pontos excede max_pontos, seleciona aproximadamente
+    max_pontos pontos bem distribuídos ao longo da fronteira em f1.
+
+    Estratégia simples:
+      - ordena por f1 crescente;
+      - pega índices igualmente espaçados.
+    """
+    if len(pontos) <= max_pontos:
+        return pontos
+    
+    pontos_ordenados = sorted(pontos, key=lambda p: p['f1'])
+    indices_continuos = np.linspace(0, len(pontos_ordenados) - 1, max_pontos)
+    indices = sorted(set(int(round(idx)) for idx in indices_continuos))
+    
+    selecionados = [pontos_ordenados[i] for i in indices]
+    return selecionados
+
+def gerar_lista_pesos(num_pesos: int = 10):
+    """
+    Gera uma lista de pares (w1, w2) igualmente espaçados em [0,1],
+    com w1 + w2 = 1.
+
+    Ex.: num_pesos = 10 -> 11 pares de pesos.
+    """
+    pesos = []
+    for i in range(num_pesos + 1):
+        w1 = i / num_pesos
+        w2 = 1.0 - w1
+        pesos.append((w1, w2))
+    return pesos
+
+
+def gerar_lista_epsilons(norm_data: dict, num_eps: int = 10):
+    """
+    Gera uma lista de valores de epsilon para o método Pε,
+    igualmente espaçados no intervalo aproximado de f2.
+
+    Usa os valores de f2_min e f2_max estimados em 'estimar_intervalos_normalizacao'.
+    """
+    f2_min = norm_data['f2_min']
+    f2_max = norm_data['f2_max']
+    
+    if f2_max <= f2_min:
+        # Intervalo degenerado -> gera pelo menos um epsilon
+        return [f2_min]
+    
+    epsilons = list(np.linspace(f2_min, f2_max, num_eps))
+    return epsilons
+
+def plot_fronteiras(lista_fronteiras_runs: list,
+                    titulo: str,
+                    nome_arquivo: str = None):
+    """
+    Plota as fronteiras (f1, f2) de várias execuções sobrepostas.
+    Cada elemento de lista_fronteiras_runs é uma lista de pontos (dicts).
+
+    Ex.: lista_fronteiras_runs tem tamanho 5 (5 execuções),
+    e cada fronteira tem até 20 pontos.
+    """
+    plt.figure()
+    
+    for idx, fronteira in enumerate(lista_fronteiras_runs):
+        f1_vals = [p['f1'] for p in fronteira]
+        f2_vals = [p['f2'] for p in fronteira]
+        plt.scatter(f1_vals, f2_vals, label=f"Execução {idx+1}")
+    
+    plt.xlabel("f1(x) - Custo total")
+    plt.ylabel("f2(x) - Desequilíbrio de carga")
+    plt.title(titulo)
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    
+    if nome_arquivo is not None:
+        import os
+        pasta = os.path.dirname(nome_arquivo)
+        if pasta:
+            os.makedirs(pasta, exist_ok=True)
+        plt.savefig(nome_arquivo, dpi=300)
+        print(f"Figura salva em: {nome_arquivo}")
+    
+    # Se quiser visualizar interativamente, descomente:
+    # plt.show()
+
+def gvns_abordagem_escalar(params: dict,
+                k_max: int,
+                max_iter_sem_melhora: int,
+                func_fitness: Callable[[np.ndarray], float],
+                probdata: ProbData,
+                solucao_inicial: np.ndarray,
+                f_id_vnd: int,
+                label: str = "scalar"):
+    """
+    GVNS genérico para uma formulação escalar qualquer (Pw ou Pε).
+
+    - func_fitness: função F(x) que será minimizada.
+    - f_id_vnd: controla o comportamento do VND híbrido:
+        1 -> foca em custo (usa shift completo)
+        2 -> foca em equilíbrio (usa smart shift)
+    """
+    melhor_solucao = solucao_inicial.copy()
+    
+    # Avalia solução inicial em termos de f1, f2 e fitness escalar
+    f1, f2, pen_cap = calcular_valores_biojetivos(melhor_solucao, params)
+    best_fitness = func_fitness(melhor_solucao)
+    
+    print(f"\n[GVNS-{label}] Solução inicial: "
+          f"F={best_fitness:.4f} (f1={f1:.2f}, f2={f2:.2f}, P_cap={pen_cap:.2f})")
+    
+    iter_sem_melhora = 0
+    iter_atual = 0
+    historico_convergencia = [(iter_atual, best_fitness, f1, f2, pen_cap)]
+    
+    while iter_sem_melhora < max_iter_sem_melhora:
+        k = 1
+        
+        while k <= k_max:
+            # 1. Shaking
+            sol_prime = shake(melhor_solucao, k, probdata)
+            
+            # 2. VND (busca local) para a formulação escalar
+            sol_second = vnd_hibrido(sol_prime, probdata, func_fitness, f_id_vnd)
+            
+            # 3. Avaliação da solução refinada
+            f1_second, f2_second, pen_cap_second = calcular_valores_biojetivos(sol_second, params)
+            fitness_second = func_fitness(sol_second)
+            
+            if fitness_second < best_fitness:
+                melhor_solucao = sol_second
+                best_fitness = fitness_second
+                f1 = f1_second
+                f2 = f2_second
+                pen_cap = pen_cap_second
+                
+                print(f"[GVNS-{label}] Iter {iter_atual}: Novo melhor! "
+                      f"F={best_fitness:.4f} (f1={f1:.2f}, f2={f2:.2f}, P_cap={pen_cap:.2f}) (k={k})")
+                
+                k = 1
+                iter_sem_melhora = 0
+                historico_convergencia.append((iter_atual, best_fitness, f1, f2, pen_cap))
+            else:
+                k += 1
+        
+        iter_sem_melhora += 1
+        iter_atual += 1
+        historico_convergencia.append((iter_atual, best_fitness, f1, f2, pen_cap))
+    
+    print(f"[GVNS-{label}] Fim. Melhor F={best_fitness:.4f} "
+          f"(f1={f1:.2f}, f2={f2:.2f}, P_cap={pen_cap:.2f})")
+    
+    return melhor_solucao, historico_convergencia
+
+def executar_experimentos_multiobjetivo(params: dict,
+                                        k_max: int,
+                                        max_iter_sem_melhora: int,
+                                        n_runs: int = 5):
+    """
+    Executa os experimentos multiobjetivo para as abordagens escalares:
+      - Pw (soma ponderada)
+      - Pε (epsilon restrito)
+
+    Atende aos itens (b), (c) e (d):
+
+      (b) Usa o GVNS/VND do item (ii) como motor mono-objetivo.
+      (c) Executa 5 vezes para cada abordagem.
+      (d) Em cada execução, extrai no máximo 20 soluções não-dominadas.
+    """
+    # 1) Estima intervalos de normalização e pontos âncora para f1 e f2
+    norm_data = estimar_intervalos_normalizacao(params, k_max, max_iter_sem_melhora)
+    
+    # 2) Define conjuntos de pesos (Pw) e epsilons (Pε)
+    lista_pesos = gerar_lista_pesos(num_pesos=10)     # -> 11 combinações de (w1,w2)
+    lista_eps   = gerar_lista_epsilons(norm_data, num_eps=10)  # -> 10 valores de ε
+    
+    fronteiras_pw_runs = []
+    fronteiras_pe_runs = []
+    
+    # ------------------------------
+    # Abordagem Pw (Soma Ponderada)
+    # ------------------------------
+    for r in range(n_runs):
+        print(f"\n===== [Pw] Execução {r+1} / {n_runs} =====")
+        pontos_pw = []
+        
+        for (w1, w2) in lista_pesos:
+            melhor_sol, f1, f2, pen_cap, _ = rodar_abordagem_soma_ponderada(
+                params=params,
+                k_max=k_max,
+                max_iter_sem_melhora=max_iter_sem_melhora,
+                w1=w1,
+                w2=w2,
+                norm_data=norm_data
+            )
+            pontos_pw.append({
+                'f1': f1,
+                'f2': f2,
+                'solucao': melhor_sol,
+                'w1': w1,
+                'w2': w2,
+                'pen_cap': pen_cap
+            })
+        
+        # Filtra não-dominadas e reduz para <= 20 pontos
+        nao_dom_pw = filtrar_nao_dominadas(pontos_pw)
+        frente_pw = selecionar_bem_distribuidas(nao_dom_pw, max_pontos=20)
+        
+        fronteiras_pw_runs.append(frente_pw)
+    
+    # --------------------------------------
+    # Abordagem Pε (método epsilon-restrito)
+    # --------------------------------------
+    for r in range(n_runs):
+        print(f"\n===== [Pε] Execução {r+1} / {n_runs} =====")
+        pontos_pe = []
+        
+        for eps in lista_eps:
+            melhor_sol, f1, f2, pen_cap, _ = rodar_abordagem_epsilon(
+                params=params,
+                k_max=k_max,
+                max_iter_sem_melhora=max_iter_sem_melhora,
+                epsilon_f2=eps
+            )
+            pontos_pe.append({
+                'f1': f1,
+                'f2': f2,
+                'solucao': melhor_sol,
+                'epsilon': eps,
+                'pen_cap': pen_cap
+            })
+        
+        nao_dom_pe = filtrar_nao_dominadas(pontos_pe)
+        frente_pe = selecionar_bem_distribuidas(nao_dom_pe, max_pontos=20)
+        
+        fronteiras_pe_runs.append(frente_pe)
+    
+    # 3) Geração dos gráficos com as 5 fronteiras sobrepostas
+    plot_fronteiras(
+        fronteiras_pw_runs,
+        titulo="Fronteiras de Pareto aproximadas - Soma Ponderada (Pw)",
+        nome_arquivo="figuras_mo/fronteiras_pw.png"
+    )
+    
+    plot_fronteiras(
+        fronteiras_pe_runs,
+        titulo="Fronteiras de Pareto aproximadas - Método ε-restrito (Pε)",
+        nome_arquivo="figuras_mo/fronteiras_pe.png"
+    )
+    
+    return fronteiras_pw_runs, fronteiras_pe_runs
+
+
 def load_data(prefix='data_5x50'):
 
     try:
@@ -581,26 +1027,6 @@ def load_data(prefix='data_5x50'):
         print(f"Erro: {e}")
         return None
 
-def plot_melhor_solucao(solucao: np.ndarray, params: dict, titulo: str):
-    m = params['m']
-    a = params['a']
-    carga_agentes = np.zeros(m)
-    
-    for j in range(params['n']):
-        i = int(solucao[j])
-        carga_agentes[i] += a[i, j]
-    
-    agentes = np.arange(m)
-    
-    plt.figure()
-    plt.bar(agentes, carga_agentes)
-    plt.xlabel('Agente')
-    plt.ylabel('Carga total (recurso consumido)')
-    plt.title(titulo)
-    plt.grid(True, axis='y')
-    plt.tight_layout()
-    plt.show()
-
 if __name__ == "__main__":
     params = load_data('data_5x50')
     
@@ -611,67 +1037,13 @@ if __name__ == "__main__":
     MAX_ITER_SEM_MELHORA = 100
     N_RUNS = 5
     
-    # -----------------------------
-    # f1: Custo Total
-    # -----------------------------
-    resultados_f1 = []
+    # EXecucacao (soma ponderada e epsilon-restrito) (Pw, Pε)
+    fronteiras_pw, fronteiras_pe = executar_experimentos_multiobjetivo(
+        params=params,
+        k_max=K_MAX,
+        max_iter_sem_melhora=MAX_ITER_SEM_MELHORA,
+        n_runs=N_RUNS
+    )
     
-    print("\n------ GVNS para f1 (Custo Total) ------")
-    for r in range(N_RUNS):
-        print(f"\n>>> Execução {r+1} / {N_RUNS} (f1)")
-        start_time = time.time()
-        
-        melhor_solucao_f1, convergencia_f1 = gvns(
-            f_id=1, 
-            params=params, 
-            k_max=K_MAX, 
-            max_iter_sem_melhora=MAX_ITER_SEM_MELHORA
-        )
-        
-        tempo = time.time() - start_time
-        f1_final, p1_final = calculate_objective_and_penalty(melhor_solucao_f1, 1, params)
-        f2_de_f1, _ = calculate_objective_and_penalty(melhor_solucao_f1, 2, params)
-        
-        print(f"Tempo de execucao (f1, run {r+1}): {tempo:.2f} s")
-        print(f"  -> Custo (f1)={f1_final:.2f}, equilibrio (f2)={f2_de_f1:.2f}, Penalidade (p(x))={p1_final:.2f}")
-        
-        resultados_f1.append(f1_final)
-    
-    # Estatísticas f1: min, std, max
-    resultados_f1 = np.array(resultados_f1)
-    print("\nResumo f1 (sobre 5 execuções):")
-    print(f"  min = {resultados_f1.min():.2f}")
-    print(f"  max = {resultados_f1.max():.2f}")
-    print(f"  std = {resultados_f1.std():.2f}")
-    
-    # -----------------------------
-    # f2: Equilíbrio de Carga
-    # -----------------------------
-    resultados_f2 = []
-    
-    print("\n------ GVNS para f2 (Equilíbrio) ------")
-    for r in range(N_RUNS):
-        print(f"\n>>> Execução {r+1} / {N_RUNS} (f2)")
-        start_time = time.time()
-        
-        melhor_solucao_f2, convergencia_f2 = gvns(
-            f_id=2, 
-            params=params, 
-            k_max=K_MAX, 
-            max_iter_sem_melhora=MAX_ITER_SEM_MELHORA
-        )
-        
-        tempo = time.time() - start_time
-        f1_de_f2, _ = calculate_objective_and_penalty(melhor_solucao_f2, 1, params)
-        f2_final, p2_final = calculate_objective_and_penalty(melhor_solucao_f2, 2, params)
-        
-        print(f"Tempo de execucao (f2, run {r+1}): {tempo:.2f} s")
-        print(f"  -> Custo (f1)={f1_de_f2:.2f}, equilibrio (f2)={f2_final:.2f}, Penalidade={p2_final:.2f}")
-        
-        resultados_f2.append(f2_final)
-    
-    resultados_f2 = np.array(resultados_f2)
-    print("\nResumo f2 (sobre 5 execuções):")
-    print(f"  min = {resultados_f2.min():.2f}")
-    print(f"  max = {resultados_f2.max():.2f}")
-    print(f"  std = {resultados_f2.std():.2f}")
+    # Se quiser, aqui você pode salvar as frentes em CSV
+    # ou imprimir algumas soluções exemplo para discutir no relatório.
