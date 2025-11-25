@@ -1,7 +1,7 @@
 # script do plot e da execucao dos testes conforme enunciado
 # executar_tc1.py
 
-import algoritmo_tc2 as vns
+import algoritmo_tc1_primeira_entrega_corrigido as vns
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -30,8 +30,12 @@ def plot_convergence(results_list: list, f_id: int):
         ax1.plot(iters, fitness_F, 'o-', label=f'Execucao {i+1}') 
         ax2.plot(iters, fitness_f, 'o-', label=f'Execucao {i+1}') 
 
-    ax1.set_xlim(-0.5, 10) 
-    ax2.set_xlim(-0.5, 10)
+    ax1.set_xlim(-0.5, 100)
+    ax2.set_xlim(-0.5, 100)
+
+    xticks = [0, 5] + list(range(0, 101, 10))
+    ax1.set_xticks(xticks)
+    ax2.set_xticks(xticks)
 
     ax1.legend()
     ax1.grid(True, linestyle='--', alpha=0.6)
@@ -40,7 +44,7 @@ def plot_convergence(results_list: list, f_id: int):
     
     plt.tight_layout()
     
-    filename = os.path.join('figuras_alg2', f'convergencia_f{f_id}_zoom.png') 
+    filename = os.path.join('figuras', f'convergencia_f{f_id}_zoom.png') 
     plt.savefig(filename)
     print(f"Grafico de convergencia (zoom) salvo em: {filename}")
     plt.close()
@@ -89,7 +93,7 @@ def plot_solution_figures(best_run_data: dict, f_id: int, params: dict):
     plt.grid(True, linestyle='--', alpha=0.6, axis='y')
     plt.tight_layout()
     
-    filename_carga = os.path.join('figuras_alg2', f'solucao_f{f_id}_carga.png')
+    filename_carga = os.path.join('figuras', f'solucao_f{f_id}_carga.png')
     plt.savefig(filename_carga)
     print(f"Grafico de carga salvo em: {filename_carga}")
     plt.close()
@@ -108,7 +112,7 @@ def plot_solution_figures(best_run_data: dict, f_id: int, params: dict):
     plt.grid(True, linestyle='--', alpha=0.6, axis='y')
     plt.tight_layout()
     
-    filename_custo = os.path.join('figuras_alg2', f'solucao_f{f_id}_custo.png')
+    filename_custo = os.path.join('figuras', f'solucao_f{f_id}_custo.png')
     plt.savefig(filename_custo)
     print(f"Grafico de custo salvo em: {filename_custo}")
     plt.close()
@@ -117,8 +121,8 @@ if __name__ == "__main__":
     
     print("--- INICIANDO EXECUCAO DA PARTE III DO TC1 ---")
     
-    if not os.path.exists('figuras_alg2'):
-        os.makedirs('figuras_alg2')
+    if not os.path.exists('figuras'):
+        os.makedirs('figuras')
     
     params = vns.load_data('data_5x50')
     if params is None:
