@@ -15,6 +15,124 @@ class DadosProblema:
         self.capacidade = params['b']
         self.b = params['b']
 
+def shake_double_shift(solucao: np.ndarray, dados: DadosProblema) -> np.ndarray:
+    """
+    Substituto para k=1.
+    Em vez de mover 1 tarefa, move 2 tarefas distintas aleatoriamente.
+    """
+    y = solucao.copy()
+    n_tarefas = dados.n_tarefas
+    n_agentes = dados.n_agentes
+    
+    # Seleciona 2 tarefas aleatórias
+    tarefas_alvo = random.sample(range(n_tarefas), 2)
+    
+    for t in tarefas_alvo:
+        agente_atual = y[t]
+        # Escolhe novo agente aleatório diferente do atual
+        novo_agente = random.randint(0, n_agentes - 1)
+        while novo_agente == agente_atual:
+            novo_agente = random.randint(0, n_agentes - 1)
+            
+        y[t] = novo_agente
+        
+    return y
+
+def shake_3way_cycle(solucao: np.ndarray, dados: DadosProblema) -> np.ndarray:
+    """
+    Substituto para k=2.
+    Realiza uma rotação entre 3 tarefas: T1->Agente(T2), T2->Agente(T3), T3->Agente(T1).
+    """
+    y = solucao.copy()
+    n_tarefas = dados.n_tarefas
+    
+    # Tenta encontrar 3 tarefas que pertençam a agentes diferentes para maximizar o impacto
+    # Se não conseguir rápido, pega 3 tarefas quaisquer
+    for _ in range(10): # Tenta 10 vezes achar agentes distintos
+        indices = random.sample(range(n_tarefas), 3)
+        t1, t2, t3 = indices[0], indices[1], indices[2]
+        a1, a2, a3 = y[t1], y[t2], y[t3]
+        
+        if a1 != a2 and a2 != a3 and a1 != a3:
+            # Rotação
+            y[t1] = a2 # T1 vai para o agente onde estava T2
+            y[t2] = a3 # T2 vai para o agente onde estava T3
+            y[t3] = a1 # T3 vai para o agente onde estava T1
+            return y
+
+    # Fallback: Se não achou 3 agentes distintos, faz rotação simples com as tarefas sorteadas
+    indices = random.sample(range(n_tarefas), 3)
+    t1, t2, t3 = indices[0], indices[1], indices[2]
+    temp_a = y[t1]
+    y[t1] = y[t2]
+    y[t2] = y[t3]
+    y[t3] = temp_a
+    
+    return y
+
+def shake_k_swaps(solucao: np.ndarray, k: int, dados: DadosProblema) -> np.ndarray:
+    """
+    Substituto para k >= 3.
+    Em vez de Ruin & Recreate (que usa lógica gulosa), faz K Swaps aleatórios.
+    Isso é mais "caótico" e menos "guiado".
+    """
+    y = solucao.copy()
+    n_tarefas = dados.n_tarefas
+    
+    for _ in range(k):
+        # Realiza um Swap aleatório
+        t1, t2 = random.sample(range(n_tarefas), 2)
+        
+        # Garante que são de agentes diferentes para haver mudança real
+        if y[t1] != y[t2]:
+            y[t1], y[t2] = y[t2], y[t1]
+        else:
+            # Se sorteou tarefas do mesmo agente, força um Shift aleatório em uma delas
+            # para garantir que algo mude nessa iteração k
+            m = dados.n_agentes
+            novo_a = random.randint(0, m - 1)
+            while novo_a == y[t1]:
+                novo_a = random.randint(0, m - 1)
+            y[t1] = novo_a
+            
+    return y
+def shake(solucao: np.ndarray, k: int, dados: DadosProblema) -> np.ndarray:
+    y = solucao.copy()
+    n_tarefas = len(solucao)
+    n_agentes = dados.n_agentes
+    indices_tarefas = np.random.permutation(n_tarefas)
+    if k == 1:
+        t = indices_tarefas[0]
+        agente_atual = y[t]
+        possiveis = [a for a in range(n_agentes) if a != agente_atual]
+        if possiveis:
+            novo_agente = np.random.choice(possiveis)
+            y = aplicar_shift(y, t, novo_agente)
+        # return shake_double_shift(solucao, dados)
+    elif k == 2:
+        # t1, t2 = indices_tarefas[0], indices_tarefas[1]
+        # if y[t1] != y[t2]:
+        #     y = aplicar_swap(y, t1, t2)
+        # else:
+        #     possiveis = [a for a in range(n_agentes) if a != y[t1]]
+        #     if possiveis:
+        #         y = aplicar_shift(y, t1, np.random.choice(possiveis))
+        return shake_3way_cycle(solucao, dados)
+    elif k >= 3:
+        qtd_ruin = min(k, int(n_tarefas * 0.2))
+        tarefas_ruin = indices_tarefas[:qtd_ruin]
+        for t in tarefas_ruin:
+            melhor_agente = -1
+            menor_custo_local = float('inf')
+            for a in range(n_agentes):
+                custo = dados.custo[a][t]
+                if custo < menor_custo_local:
+                    menor_custo_local = custo
+                    melhor_agente = a
+            y[t] = melhor_agente
+        # return shake_k_swaps(solucao, k, dados)
+    return y
+
 def neighborhood_change(solucao_atual: np.ndarray, fitness_atual: float, solucao_refinada: np.ndarray, fitness_refinada: float, k_atual: int):
     if fitness_refinada < fitness_atual:
         solucao_nova = solucao_refinada.copy()
@@ -107,40 +225,6 @@ def best_improvement(solucao_atual: np.ndarray, func_geradora: Callable, func_ob
             melhor_vizinho = vizinho
             encontrou_melhoria = True
     return melhor_vizinho, melhor_custo, encontrou_melhoria
-
-def shake(solucao: np.ndarray, k: int, dados: DadosProblema) -> np.ndarray:
-    y = solucao.copy()
-    n_tarefas = len(solucao)
-    n_agentes = dados.n_agentes
-    indices_tarefas = np.random.permutation(n_tarefas)
-    if k == 1:
-        t = indices_tarefas[0]
-        agente_atual = y[t]
-        possiveis = [a for a in range(n_agentes) if a != agente_atual]
-        if possiveis:
-            novo_agente = np.random.choice(possiveis)
-            y = aplicar_shift(y, t, novo_agente)
-    elif k == 2:
-        t1, t2 = indices_tarefas[0], indices_tarefas[1]
-        if y[t1] != y[t2]:
-            y = aplicar_swap(y, t1, t2)
-        else:
-            possiveis = [a for a in range(n_agentes) if a != y[t1]]
-            if possiveis:
-                y = aplicar_shift(y, t1, np.random.choice(possiveis))
-    elif k >= 3:
-        qtd_ruin = min(k, int(n_tarefas * 0.2))
-        tarefas_ruin = indices_tarefas[:qtd_ruin]
-        for t in tarefas_ruin:
-            melhor_agente = -1
-            menor_custo_local = float('inf')
-            for a in range(n_agentes):
-                custo = dados.custo[a][t]
-                if custo < menor_custo_local:
-                    menor_custo_local = custo
-                    melhor_agente = a
-            y[t] = melhor_agente
-    return y
 
 def vnd_hibrido(solucao_inicial: np.ndarray, dados: DadosProblema, func_fitness: Callable, f_id: int) -> np.ndarray:
     solucao = solucao_inicial.copy()

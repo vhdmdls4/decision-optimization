@@ -129,8 +129,8 @@ if __name__ == "__main__":
         print("Falha ao carregar os dados. Abortando.")
         exit()
         
-    K_MAX = 5
-    MAX_ITER_SEM_MELHORA = 100
+    K_MAX = 3
+    MAX_ITER_SEM_MELHORA = 30
     NUM_EXECUCOES = 5
     
     results_f1 = []

@@ -5,6 +5,8 @@ import random
 from typing import Iterator, Callable, Tuple
 import matplotlib.pyplot as plt
 
+from gerar_csv_fronteiras import salvar_fronteiras_csv
+
 PENALIDADE_COEFICIENTE = 10000.0
 
 class ProbData:
@@ -14,6 +16,88 @@ class ProbData:
         self.recurso = params['a']        # a[i,j] = recurso do agente i p/ tarefa j
         self.custo = params['c']          # c[i,j] = custo de atribuir j a i
         self.capacidade = params['b']     # b[i] = capacidade do agente i
+
+def shake_double_shift(solucao: np.ndarray, dados: ProbData) -> np.ndarray:
+    """
+    Substituto para k=1.
+    Em vez de mover 1 tarefa, move 2 tarefas distintas aleatoriamente.
+    """
+    y = solucao.copy()
+    n_tarefas = dados.n
+    n_agentes = dados.m
+    
+    # Seleciona 2 tarefas aleatórias
+    tarefas_alvo = random.sample(range(n_tarefas), 2)
+    
+    for t in tarefas_alvo:
+        agente_atual = y[t]
+        # Escolhe novo agente aleatório diferente do atual
+        novo_agente = random.randint(0, n_agentes - 1)
+        while novo_agente == agente_atual:
+            novo_agente = random.randint(0, n_agentes - 1)
+            
+        y[t] = novo_agente
+        
+    return y
+
+def shake_3way_cycle(solucao: np.ndarray, dados: ProbData) -> np.ndarray:
+    """
+    Substituto para k=2.
+    Realiza uma rotação entre 3 tarefas: T1->Agente(T2), T2->Agente(T3), T3->Agente(T1).
+    """
+    y = solucao.copy()
+    n_tarefas = dados.n
+    
+    # Tenta encontrar 3 tarefas que pertençam a agentes diferentes para maximizar o impacto
+    # Se não conseguir rápido, pega 3 tarefas quaisquer
+    for _ in range(10): # Tenta 10 vezes achar agentes distintos
+        indices = random.sample(range(n_tarefas), 3)
+        t1, t2, t3 = indices[0], indices[1], indices[2]
+        a1, a2, a3 = y[t1], y[t2], y[t3]
+        
+        if a1 != a2 and a2 != a3 and a1 != a3:
+            # Rotação
+            y[t1] = a2 # T1 vai para o agente onde estava T2
+            y[t2] = a3 # T2 vai para o agente onde estava T3
+            y[t3] = a1 # T3 vai para o agente onde estava T1
+            return y
+
+    # Fallback: Se não achou 3 agentes distintos, faz rotação simples com as tarefas sorteadas
+    indices = random.sample(range(n_tarefas), 3)
+    t1, t2, t3 = indices[0], indices[1], indices[2]
+    temp_a = y[t1]
+    y[t1] = y[t2]
+    y[t2] = y[t3]
+    y[t3] = temp_a
+    
+    return y
+
+def shake_k_swaps(solucao: np.ndarray, k: int, dados: ProbData) -> np.ndarray:
+    """
+    Substituto para k >= 3.
+    Em vez de Ruin & Recreate (que usa lógica gulosa), faz K Swaps aleatórios.
+    Isso é mais "caótico" e menos "guiado".
+    """
+    y = solucao.copy()
+    n_tarefas = dados.n
+    
+    for _ in range(k):
+        # Realiza um Swap aleatório
+        t1, t2 = random.sample(range(n_tarefas), 2)
+        
+        # Garante que são de agentes diferentes para haver mudança real
+        if y[t1] != y[t2]:
+            y[t1], y[t2] = y[t2], y[t1]
+        else:
+            # Se sorteou tarefas do mesmo agente, força um Shift aleatório em uma delas
+            # para garantir que algo mude nessa iteração k
+            m = dados.n
+            novo_a = random.randint(0, m - 1)
+            while novo_a == y[t1]:
+                novo_a = random.randint(0, m - 1)
+            y[t1] = novo_a
+            
+    return y
 
 # Estruturas de Vizinhança (n1, n2, n3, ...)
 def gerar_vizinhos_shift_completo(solucao: np.ndarray, probdata: ProbData) -> Iterator[np.ndarray]:
@@ -130,13 +214,14 @@ def shake(x: np.ndarray, k: int, probdata: object) -> np.ndarray:
             
     elif k == 2:
         # N2: Swap de duas tasks
-        t1, t2 = indices_tarefas[0], indices_tarefas[1]
-        if y[t1] != y[t2]:
-            y = aplicar_swap(y, t1, t2)
-        else:
-            possiveis = [a for a in range(m_agentes) if a != y[t1]]
-            if possiveis:
-                y = aplicar_shift(y, t1, np.random.choice(possiveis))
+        # t1, t2 = indices_tarefas[0], indices_tarefas[1]
+        # if y[t1] != y[t2]:
+        #     y = aplicar_swap(y, t1, t2)
+        # else:
+        #     possiveis = [a for a in range(m_agentes) if a != y[t1]]
+        #     if possiveis:
+        #         y = aplicar_shift(y, t1, np.random.choice(possiveis))
+        return shake_3way_cycle(x, probdata)
 
     elif k >= 3: # Ruin & Recreate (baseado no LNS do handbook)
         qtd_ruin = min(k, int(n_tarefas * 0.2)) 
@@ -769,3 +854,6 @@ if __name__ == "__main__":
         max_iter_sem_melhora=MAX_ITER_SEM_MELHORA,
         n_runs=N_RUNS
     )
+
+    salvar_fronteiras_csv(fronteiras_pw, "fronteiras_pw.csv", tipo="Pw")
+    salvar_fronteiras_csv(fronteiras_pe, "fronteiras_pe.csv", tipo="Pe")
