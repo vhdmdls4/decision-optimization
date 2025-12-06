@@ -1,0 +1,10 @@
+vhdua@DESKTOP-NA79I30 MINGW64 ~/Desktop/aulas/onl/tc1_decisao (main)
+$ python matriz_ahp.py 
+--- Resultados do AHP (Matriz Refinada) ---
+f1 (Custo): 0.5254 (52.5%)
+f2 (Equilíbrio): 0.1104 (11.0%)
+f3 (Robustez): 0.3009 (30.1%)
+f4 (Risco): 0.0634 (6.3%)
+
+Razão de Consistência (CR): 0.0075
+>> A matriz é CONSISTENTE. Os pesos podem ser utilizados.
