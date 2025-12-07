@@ -3,33 +3,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-# ==========================================
-# 1. PREPARAR DADOS: TOP 8 PROMETHEE II
-# ==========================================
+
 def preparar_dados_top8_promethee(path_csv="tabela_promethee_II.csv"):
-    # Carrega a tabela resultante do PROMETHEE II
     df = pd.read_csv(path_csv)
 
-    # Conferência de colunas necessárias
     required_cols = [
         "Custo Total",
         "Equilibrio",
         "Robustez (Norm 0-100)",
         "Estabilidade (Norm 0-100)",
         "phi",
-        "origem",        # deve conter 'Pe' ou 'Pw'
+        "origem",
     ]
     for col in required_cols:
         if col not in df.columns:
             raise ValueError(f"Coluna obrigatória '{col}' não encontrada em {path_csv}")
 
-    # Renomeia para nomes internos de trabalho
     df["f1"] = df["Custo Total"]
     df["f2"] = df["Equilibrio"]
     df["f3"] = df["Robustez (Norm 0-100)"]
     df["f4"] = df["Estabilidade (Norm 0-100)"]
 
-    # Ranges globais para normalização
     ranges = {}
     for col in ["f1", "f2", "f3", "f4"]:
         vmin = df[col].min()
@@ -48,21 +42,16 @@ def preparar_dados_top8_promethee(path_csv="tabela_promethee_II.csv"):
             return np.ones_like(series, dtype=float)
         return (series - vmin) / (vmax - vmin)
 
-    # f1, f2 -> minimizar  |  f3, f4 -> maximizar (já são benefício)
     df["n_f1"] = norm_min(df["f1"], "f1")
     df["n_f2"] = norm_min(df["f2"], "f2")
     df["n_f3"] = norm_max(df["f3"], "f3")
     df["n_f4"] = norm_max(df["f4"], "f4")
 
-    # Seleciona Top 8 por fluxo líquido φ (PROMETHEE II)
     df_top = df.sort_values("phi", ascending=False).head(8).reset_index(drop=True)
 
     return df_top
 
 
-# ==========================================
-# 2. PLOTAGEM EM COORDENADAS PARALELAS
-# ==========================================
 def plot_paralelo_promethee(df_top):
     fig, ax = plt.subplots(figsize=(12, 7))
 
@@ -75,22 +64,18 @@ def plot_paralelo_promethee(df_top):
     ]
     x_coords = list(range(len(cols_plot)))
 
-    # Plota de trás pra frente para a melhor (índice 0) ficar por cima
     for idx in reversed(df_top.index):
         row = df_top.loc[idx]
         y_values = [row[c] for c in cols_plot]
 
-        # Cor por método
         if row["origem"] == "Pw":
             color = "tab:orange"
             alpha = 0.6
-        else:  # 'Pe'
+        else:
             color = "tab:blue"
             alpha = 0.6
 
-        # Melhor solução PROMETHEE II (phi máximo)
         if idx == 0:
-            # Contorno preto grosso
             ax.plot(
                 x_coords,
                 y_values,
@@ -99,7 +84,6 @@ def plot_paralelo_promethee(df_top):
                 alpha=0.85,
                 zorder=10,
             )
-            # Linha colorida por cima
             ax.plot(
                 x_coords,
                 y_values,
@@ -124,7 +108,6 @@ def plot_paralelo_promethee(df_top):
                 zorder=2,
             )
 
-    # Eixos verticais
     for x in x_coords:
         ax.axvline(x, color="gray", linestyle="--", linewidth=1, alpha=0.3)
 
@@ -135,7 +118,6 @@ def plot_paralelo_promethee(df_top):
     ax.set_ylim(-0.05, 1.05)
     ax.set_title("Coordenadas Paralelas: Top 8 Soluções", fontsize=14, pad=15)
 
-    # Legenda
     legend_elements = [
         Line2D([0], [0], color="tab:orange", lw=2, label="Soluções Pw"),
         Line2D([0], [0], color="tab:blue", lw=2, label="Soluções Pe"),
@@ -154,9 +136,6 @@ def plot_paralelo_promethee(df_top):
     print("Gráfico salvo: grafico_paralelo_top8.png")
 
 
-# ==========================================
-# 3. MAIN
-# ==========================================
 if __name__ == "__main__":
     df_top8 = preparar_dados_top8_promethee()
     print("Top 8 Soluções para conferência:")

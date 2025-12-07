@@ -5,7 +5,6 @@ import networkx as nx
 import math
 import io
 
-# Mesmos dados do CSV
 csv_data = """Custo Total,Equilibrio,Robustez (Norm 0-100),Estabilidade (Norm 0-100),Score_Global,origem,phi,phi_plus,phi_minus
 930.0,2.0,83.8199908470547,1.7791689736818013,0.7549465702096202,Pw,0.27428125298974537,0.5380684210526315,0.41187894736842107
 951.0,2.0,100.0,1.1461223138897183,0.7518084209643172,Pw,0.2676746229996338,0.5414421052631578,0.4085052631578948
@@ -22,22 +21,14 @@ def main():
     df = pd.read_csv(io.StringIO(csv_data))
     df = df.rename(columns={'origem': 'metodo', 'phi': 'phi_net'})
     
-    # Filtra Top 10 e cria labels
     df_top = df.sort_values('phi_net', ascending=False).head(10).copy()
     df_top['label_id'] = df_top.groupby('metodo').cumcount() + 1
     df_top['label'] = df_top['metodo'] + "_" + df_top['label_id'].astype(str)
-    
-    # Grafo Promethee II (Grafo completo induzido pelo Ranking)
-    # Aresta A -> B se Phi_net(A) > Phi_net(B)
-    # Mas para não poluir, desenhamos apenas as arestas sequenciais do ranking (1->2->3...)
-    # Ou desenhamos setas do Kernel I (híbrido).
-    # Vamos desenhar a sequência do ranking para visualizar o fluxo.
     
     G = nx.DiGraph()
     records = df_top.to_dict('records')
     for r in records: G.add_node(r['label'], **r)
     
-    # Arestas Sequenciais (1->2, 2->3, etc) para mostrar o fluxo do ranking
     edges = []
     for i in range(len(records)-1):
         source = records[i]['label']
@@ -45,36 +36,32 @@ def main():
         edges.append((source, target))
     G.add_edges_from(edges)
     
-    # Layout Circular Ordenado (Relógio)
     ordered_nodes = df_top['label'].tolist()
     pos = {}
     angle_step = 2 * math.pi / len(ordered_nodes)
     for i, node in enumerate(ordered_nodes):
-        theta = math.pi/2 - i * angle_step # 12h, sentido horário
+        theta = math.pi/2 - i * angle_step
         pos[node] = np.array([math.cos(theta), math.sin(theta)])
     
     plt.figure(figsize=(10, 10))
     
-    # Cores
     node_colors = []
-    for n in ordered_nodes: # Usa ordem correta
+    for n in ordered_nodes:
         metodo = G.nodes[n]['metodo']
-        if n == ordered_nodes[0]: c = '#FFD700' # Ouro (Top 1)
-        elif metodo == 'Pw': c = '#FFDAB9' # Pw
-        else: c = '#ADD8E6' # Pe
+        if n == ordered_nodes[0]: c = '#FFD700'
+        elif metodo == 'Pw': c = '#FFDAB9'
+        else: c = '#ADD8E6'
         node_colors.append(c)
         
     nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=2000, 
                           edgecolors='gray', linewidths=1.5)
     
-    # Arestas de Fluxo (Sequência do Ranking)
     nx.draw_networkx_edges(G, pos, 
                           arrowstyle='-|>', arrowsize=30, 
                           edge_color='gray', width=2.0,
-                          connectionstyle="arc3,rad=0.1", # Curva suave
+                          connectionstyle="arc3,rad=0.1",
                           node_size=2000)
     
-    # Labels com Rank e Phi
     labels = {}
     for i, n in enumerate(ordered_nodes):
         phi = G.nodes[n]['phi_net']
@@ -82,7 +69,6 @@ def main():
         
     nx.draw_networkx_labels(G, pos, labels=labels, font_size=9, font_weight='bold')
     
-    # Legenda
     from matplotlib.lines import Line2D
     legend_elements = [
         Line2D([0], [0], marker='o', color='w', markerfacecolor='#FFD700', markersize=15, label='Vencedora (#1)'),

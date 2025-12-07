@@ -15,7 +15,7 @@ def salvar_fronteiras_csv(fronteiras, nome_arquivo, tipo="Pw"):
             if tipo == "Pw":
                 linha["w1"] = p["w1"]
                 linha["w2"] = p["w2"]
-            else:  # Pe
+            else: 
                 linha["epsilon"] = p["epsilon"]
 
             # salva também a solução como string

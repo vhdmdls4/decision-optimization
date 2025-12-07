@@ -5,7 +5,6 @@ import networkx as nx
 import math
 import io
 
-# Dados do CSV (Resultados PROMETHEE)
 csv_data = """Custo Total,Equilibrio,Robustez (Norm 0-100),Estabilidade (Norm 0-100),Score_Global,origem,phi,phi_plus,phi_minus
 930.0,2.0,83.8199908470547,1.7791689736818013,0.7549465702096202,Pw,0.27428125298974537,0.5380684210526315,0.41187894736842107
 951.0,2.0,100.0,1.1461223138897183,0.7518084209643172,Pw,0.2676746229996338,0.5414421052631578,0.4085052631578948
@@ -22,14 +21,11 @@ def main():
     df = pd.read_csv(io.StringIO(csv_data))
     df = df.rename(columns={'origem': 'metodo', 'phi': 'phi_net'})
     
-    # 1. Filtra Top 10
     df_top = df.sort_values('phi_net', ascending=False).head(10).copy()
     
-    # Labels Curtos
     df_top['label_id'] = df_top.groupby('metodo').cumcount() + 1
     df_top['label'] = df_top['metodo'] + "_" + df_top['label_id'].astype(str)
     
-    # 2. Cria Grafo e Arestas (PROMETHEE I)
     G = nx.DiGraph()
     node_data = df_top.to_dict('records')
     for r in node_data: G.add_node(r['label'], **r)
@@ -38,8 +34,6 @@ def main():
     for a in node_data:
         for b in node_data:
             if a['label'] == b['label']: continue
-            # Dominância Estrita: Phi+(A) >= Phi+(B) AND Phi-(A) <= Phi-(B)
-            # Com pelo menos um > ou <
             better_plus = a['phi_plus'] >= b['phi_plus'] - 1e-6
             better_minus = a['phi_minus'] <= b['phi_minus'] + 1e-6
             strict = (a['phi_plus'] > b['phi_plus'] + 1e-6) or \
@@ -50,40 +44,32 @@ def main():
     
     G.add_edges_from(edges)
     
-    # 3. Identifica Kernel (Nós sem arestas de entrada no subgrafo)
-    # Kernel = Não dominados por ninguém do grupo
     dominated_nodes = {v for u, v in edges}
     kernel_nodes = [n for n in G.nodes() if n not in dominated_nodes]
     
-    # 4. Layout Circular (Sem ordem de phi_net, apenas visual)
     pos = nx.circular_layout(G)
     
-    # 5. Estilo
     node_colors = []
     for n in G.nodes():
         if n in kernel_nodes:
-            c = '#90EE90' # Light Green (KERNEL)
+            c = '#90EE90'
         else:
-            c = '#E0E0E0' # Cinza claro (Dominado)
+            c = '#E0E0E0'
         node_colors.append(c)
         
     plt.figure(figsize=(10, 10))
     
-    # Nós
     nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=2200, 
                           edgecolors='gray', linewidths=2.0)
     
-    # Arestas (Curvas e com seta visível)
     nx.draw_networkx_edges(G, pos, 
                           arrowstyle='-|>', arrowsize=30, 
                           edge_color='#555555', width=1.5,
                           connectionstyle="arc3,rad=0.1",
                           node_size=2200)
     
-    # Labels
     nx.draw_networkx_labels(G, pos, font_size=10, font_weight='bold')
     
-    # Legenda
     from matplotlib.lines import Line2D
     legend_elements = [
         Line2D([0], [0], marker='o', color='w', markerfacecolor='#90EE90', markersize=15, label='Kernel (Não Dominada)'),
