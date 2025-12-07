@@ -5,7 +5,7 @@ import random
 from typing import Iterator, Callable, Tuple
 import matplotlib.pyplot as plt
 
-from gerar_csv_fronteiras import salvar_fronteiras_csv
+from etapa_1_gerar_csv_fronteiras import salvar_fronteiras_csv
 
 PENALIDADE_COEFICIENTE = 10000.0
 
