@@ -1,0 +1,40 @@
+vhdua@DESKTOP-NA79I30 MINGW64 ~/Desktop/aulas/onl/tc1_decisao (main)
+$ python etapa_2_gerar_dados_decisao.py
+Carregando parâmetros...
+Processando fronteiras_pe.csv...
+Processando fronteiras_pw.csv...
+
+=== Concluído com Sucesso ===
+Arquivos gerados:
+ - fronteiras_pe_com_criterios.csv
+ - fronteiras_pw_com_criterios.csv
+ - fronteira_unificada_com_criterios.csv
+(.venv) 
+vhdua@DESKTOP-NA79I30 MINGW64 ~/Desktop/aulas/onl/tc1_decisao (main)
+$ python etapa_3_gerar_grafico_decisao_ahp.py
+Pesos AHP Calculados: {'f1': np.float64(0.38905127980248894), 'f2': np.float64(0.3170364270351762), 'f3': np.float64(0.17240296169413885), 'f4': np.float64(0.12150933146819594)} (CR=0.0301)
+Sucesso! Gráfico salvo como 'grafico_decisao_ahp_diferenciado.png'
+(.venv) 
+vhdua@DESKTOP-NA79I30 MINGW64 ~/Desktop/aulas/onl/tc1_decisao (main)
+$ python etapa_4_gerar_tabela_ahp.py
+
+=== DISTRIBUIÇÃO DE f3 BRUTO ===
+count    63.000000
+mean      7.236181
+std       2.289163
+min       2.039396
+25%       6.036434
+50%       7.827959
+75%       9.137363
+max      10.327490
+Name: f3_raw, dtype: float64
+
+Valores únicos: [np.float64(2.03939640928046), np.float64(2.831521949929273), np.float64(3.478475955617873), np.float64(4.171731233965479), np.float64(4.255572582840665), np.float64(4.516334771633423), np.float64(4.563070802673949), np.float64(5.0351738115899085), np.float64(5.923279550567249), np.float64(6.00877908741092), np.float64(6.064088470199258), np.float64(6.140377395430742), np.float64(6.269603891102015), np.float64(6.302172079062328), np.float64(6.488421201007536), np.float64(6.77605850574345), np.float64(6.958929974678144), np.float64(7.110794200761046), np.float64(7.122318893555084), np.float64(7.256435122064403), np.float64(7.31274278613348), np.float64(7.802328676241829), np.float64(7.827958597217741), np.float64(7.930751832733993), np.float64(7.979633640780836), np.float64(7.997851024697564), np.float64(8.27038348214607), np.float64(8.295292219360691), np.float64(8.451925832216604), np.float64(8.487499529704252), np.float64(8.610153680317872), np.float64(8.641552607172324), np.float64(8.767584410796461), np.float64(8.961385956385373), np.float64(8.976288302189925), np.float64(8.980463072823113), np.float64(9.11464191623077), np.float64(9.160083456368762), np.float64(9.320891839857866), np.float64(9.469251845308785), np.float64(9.611780229982823), np.float64(9.814652500599404), np.float64(10.165884776666907), np.float64(10.323315507145496), np.float64(10.327490277778686)]
+ Custo Total  Equilibrio  Robustez (Norm 0-100)  Estabilidade (Norm 0-100)  Score_Global origem
+      930.00        2.00                  83.82                       1.78          0.75     Pw
+      951.00        2.00                 100.00                       1.15          0.75     Pw
+      966.00        0.00                  88.55                       0.00          0.75     Pw
+      909.00        3.00                  68.68                       2.62          0.74     Pw
+      921.00        5.00                  66.65                      11.95          0.69     Pe
+
+Tabela salva: tabela_decisao_final_normalizada.csv
